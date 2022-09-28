@@ -6,12 +6,13 @@
 #define process_name "writer1"
 
 int main(){
-	clock_t start_time;
-	while(1){
-		start_time = clock();
-		while(clock() < start_time + 10);
-		write_to_log(process_name, "INFO", "TIMER ENDED");
+	init_log();
+	char buffer[100];
+	for(int i = 0; i < 100; i++){
+		sprintf(buffer, "%d -- %d", i, i*i);
+		write_to_log(process_name, i%3, buffer);
 	}
+	close_log();
 	return 0;
 }
 

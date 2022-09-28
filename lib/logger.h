@@ -4,13 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define INFO 0
-#define WARNING 1
-#define ERROR 2
 
+enum type_m {INFO = 0, WARNING = 1, ERROR = 2};
 
-
-int write_to_log(char *process_name, char *message_type, char *message);
+int write_to_log(char *process_name, int message_type, char *message);
 int read_log(char *name);
 int close_log();
 int init_log();

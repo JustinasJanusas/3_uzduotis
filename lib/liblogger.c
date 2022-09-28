@@ -1,6 +1,7 @@
 #include "logger.h"
 
-#define log_file_path "./log.db"
+//#define log_file_path "./log.db"
+#define log_file_path "/var/log/mylogs.db"
 
 static sqlite3 *db_con = NULL;
 static int run_single_query(char *query, int argc, char *argv[]){
@@ -14,31 +15,35 @@ static int run_single_query(char *query, int argc, char *argv[]){
         	return 1;
 	}    
 	for(int i = 0; i < argc; i++){
-		sqlite3_bind_text(res, i+1, argv[i], 30, NULL);
+		if(i == 1)
+			sqlite3_bind_int(res, i+1, atoi(argv[i]));
+		else
+			sqlite3_bind_text(res, i+1, argv[i], 30, NULL);
 	}
-    	rc = sqlite3_step(res);
+	rc = sqlite3_step(res);
+	if (rc != SQLITE_OK && rc != SQLITE_DONE)
+		return rc;
 	sqlite3_finalize(res);	
-	return rc;
+	return 0;
 }
 
 static int db_setup(){ 
 	int rc = 0;
+	rc = run_single_query("CREATE TABLE IF NOT EXISTS MessageType ( ID integer NOT NULL " 
+			"PRIMARY KEY , Name varchar(50)); ", 0, NULL);
+	if(rc != SQLITE_OK && rc != SQLITE_DONE)
+		return rc;
+	rc = run_single_query("INSERT or IGNORE INTO  MessageType (ID, Name) VALUES (0, 'INFO'), (1, 'WARNING'), (2, 'ERROR');",
+						0, NULL);
+	if(rc != SQLITE_OK && rc != SQLITE_DONE)
+		return rc;
 	rc = run_single_query("CREATE TABLE IF NOT EXISTS LogMessage ( ID integer NOT NULL " 
-			"PRIMARY" 
-			" KEY AUTOINCREMENT, Process varchar(50), " 
-			" Time datetime DEFAULT CURRENT_TIMESTAMP, Type varchar(20), "
-			" Message varchar(255));", 0, NULL);
-	return rc;
+			"PRIMARY KEY AUTOINCREMENT, Process varchar(50), " 
+			" Time datetime DEFAULT CURRENT_TIMESTAMP, Type integer, "
+			" Message varchar(255), FOREIGN KEY (Type) REFERENCES MessageType(ID)) ;", 0, NULL);
+	return 0;
 }
 
-
-static int callback(void *NotUsed, int argc, char **argv, char **azColName){
-	NotUsed = 0;
-	if(argc > 4)
-        	fprintf(stdout, "%4s %10s %20s %6s %30s\n", argv[0], argv[1], argv[2], argv[3],
-        		argv[4]);
-    	return 0;
-}
 
 int init_log() {
 	int rc = 0;
@@ -56,13 +61,15 @@ int close_log(){
 	return 0;
 }
 
-int write_to_log(char *process_name, char *message_type, char *message){
+int write_to_log(char *process_name, int message_type, char *message){
 	int rc = 0;
 
 	char buffer[1024];
+	char typebuf[3];
+	sprintf(typebuf, "%d", message_type);
 	snprintf(buffer, sizeof(buffer), "INSERT INTO LogMessage (Process, "
 		"Type, Message) VALUES (?, ?, ?)");
-	char *args[3] = {process_name, message_type, message};
+	char *args[3] = {process_name, typebuf, message};
 	rc = run_single_query(buffer, 3, args);
 	return rc;
 }
@@ -70,23 +77,31 @@ int write_to_log(char *process_name, char *message_type, char *message){
 int read_log(char *name){
 	sqlite3_stmt *res;
 	int rc = 0;
-	char query[256] = "SELECT * FROM LogMessage ";
+	char query[256] = "SELECT LogMessage.ID, LogMessage.Process, LogMessage.Time, "
+						"MessageType.Name, LogMessage.Message FROM LogMessage LEFT JOIN"
+						" MessageType ON LogMessage.Type = MessageType.ID ";
 	if(name != NULL){
-		char filter[128];
-		snprintf(filter, sizeof(filter), "WHERE Process = '%s';", name);
-		strcat(query, filter);
+		strcat(query, "WHERE LogMessage.Process = ? ;");
 	}
-	char *error = 0;
-	rc = sqlite3_exec(db_con, query, callback, 0, &error);
+	rc = sqlite3_prepare(db_con, query, -1, &res, 0);
+	
 	if(rc != SQLITE_OK){
-		fprintf(stderr, "Failed to select data: %s\n", error);
-
-		sqlite3_free(error);
-		sqlite3_close(db_con);
-		
-		return 1;
+		fprintf(stderr, "Failed to fetch data: %s\n", sqlite3_errmsg(db_con));
+		return rc;
 	}
-	sqlite3_close(db_con);
+	if(name != NULL){
+		
+		rc = sqlite3_bind_text(res, 1, name, 30, NULL);
+		printf("%d\n", rc);
+		printf("%s\n", sqlite3_expanded_sql(res));
+	}
+	rc = sqlite3_step(res);
+	while(rc == SQLITE_ROW){
+		fprintf(stdout, "%4s %10s %20s %6s %30s\n", sqlite3_column_text(res, 0), 
+				sqlite3_column_text(res, 1), sqlite3_column_text(res, 2), 
+				sqlite3_column_text(res, 3), sqlite3_column_text(res, 4));
+		rc = sqlite3_step(res);
+	}
 	return 0;
 }
 
