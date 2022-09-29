@@ -1,10 +1,11 @@
 #include "logger.h"
 
-//#define log_file_path "./log.db"
 #define log_file_path "/var/log/mylogs.db"
 
 static sqlite3 *db_con = NULL;
-static int run_single_query(char *query, int argc, char *argv[]){
+
+static int run_single_query(char *query, int argc, char *argv[])
+{
 	sqlite3_stmt *res;
 	int rc = 0;
 	rc = sqlite3_prepare(db_con, query,
@@ -29,7 +30,8 @@ static int run_single_query(char *query, int argc, char *argv[]){
 	return 0;
 }
 
-static int db_setup(){ 
+static int db_setup()
+{ 
 	int rc = 0;
 	rc = run_single_query("CREATE TABLE IF NOT EXISTS MessageType ( ID integer NOT NULL " 
 			"PRIMARY KEY , Name TEXT(30)); ", 0, NULL);
@@ -47,7 +49,8 @@ static int db_setup(){
 }
 
 
-int init_log() {
+int init_log() 
+{
 	int rc = 0;
 	rc = sqlite3_open(log_file_path, &db_con);
 	if(rc){
@@ -58,12 +61,14 @@ int init_log() {
 	db_setup();
 	return rc;
 }
-int close_log(){
+int close_log()
+{
 	sqlite3_close(db_con);
 	return 0;
 }
 
-int write_to_log(char *process_name, int message_type, char *message){
+int write_to_log(char *process_name, int message_type, char *message)
+{
 	int rc = 0;
 
 	char buffer[1024];
@@ -76,7 +81,8 @@ int write_to_log(char *process_name, int message_type, char *message){
 	return rc;
 }
 
-int read_log(char *name){
+int read_log(char *name)
+{
 	sqlite3_stmt *res;
 	int rc = 0;
 	char query[256] = "SELECT LogMessage.ID, LogMessage.Process, LogMessage.Time, "
@@ -104,6 +110,7 @@ int read_log(char *name){
 	}
 	sqlite3_clear_bindings(res);
 	sqlite3_reset(res);
+	sqlite3_finalize(res);
 	return 0;
 }
 

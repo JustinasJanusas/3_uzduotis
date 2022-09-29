@@ -5,7 +5,8 @@
 
 #define process_name "writer1"
 
-int main(){
+int main()
+{
 	init_log();
 	char buffer[100];
 	for(int i = 0; i < 100; i++){

@@ -11,5 +11,4 @@ int write_to_log(char *process_name, int message_type, char *message);
 int read_log(char *name);
 int close_log();
 int init_log();
-//int read_log(struct arguments argss);
 

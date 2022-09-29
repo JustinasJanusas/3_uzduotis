@@ -10,14 +10,16 @@ LDLIBS:=-lsqlite3
 all: $(LIB)
 
 $(LIB): liblogger.c
-	$(CC) $(CFLAGS) $(LDFLAGS) $(LDLIBS) -o $@ $^
+	$(CC) $(CFLAGS) $(LDFLAGS)  -o $@ $^ $(LDLIBS)
 
 install: $(LIB)
 	install -d $(PREFIX)/include
 	install -m 644 logger.h $(PREFIX)/include/logger.h
-
+	install -d $(PREFIX)/lib
+	install -m 644 $(LIB) $(PREFIX)/lib/
 uninstall:
-	$(RM) $(PREFIX)/include/logger.h 
+	$(RM) $(PREFIX)/include/logger.h
+	$(RM) $(PREFIX)/lib/$(LIB) 
 clean:
 	rm -f $(LIB)
 
