@@ -23,8 +23,8 @@ static int run_single_query(char *query, int argc, char *argv[]){
 	rc = sqlite3_step(res);
 	if (rc != SQLITE_OK && rc != SQLITE_DONE)
 		return rc;
-		sqlite3_clear_bindings(res);
-		sqlite3_reset(res);
+	sqlite3_clear_bindings(res);
+	sqlite3_reset(res);
 	sqlite3_finalize(res);	
 	return 0;
 }
