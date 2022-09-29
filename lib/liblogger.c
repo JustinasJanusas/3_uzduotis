@@ -18,11 +18,13 @@ static int run_single_query(char *query, int argc, char *argv[]){
 		if(i == 1)
 			sqlite3_bind_int(res, i+1, atoi(argv[i]));
 		else
-			sqlite3_bind_text(res, i+1, argv[i], 30, NULL);
+			sqlite3_bind_text(res, i+1, argv[i], strlen(argv[i]) , NULL);
 	}
 	rc = sqlite3_step(res);
 	if (rc != SQLITE_OK && rc != SQLITE_DONE)
 		return rc;
+		sqlite3_clear_bindings(res);
+		sqlite3_reset(res);
 	sqlite3_finalize(res);	
 	return 0;
 }
@@ -30,7 +32,7 @@ static int run_single_query(char *query, int argc, char *argv[]){
 static int db_setup(){ 
 	int rc = 0;
 	rc = run_single_query("CREATE TABLE IF NOT EXISTS MessageType ( ID integer NOT NULL " 
-			"PRIMARY KEY , Name varchar(50)); ", 0, NULL);
+			"PRIMARY KEY , Name TEXT(30)); ", 0, NULL);
 	if(rc != SQLITE_OK && rc != SQLITE_DONE)
 		return rc;
 	rc = run_single_query("INSERT or IGNORE INTO  MessageType (ID, Name) VALUES (0, 'INFO'), (1, 'WARNING'), (2, 'ERROR');",
@@ -38,9 +40,9 @@ static int db_setup(){
 	if(rc != SQLITE_OK && rc != SQLITE_DONE)
 		return rc;
 	rc = run_single_query("CREATE TABLE IF NOT EXISTS LogMessage ( ID integer NOT NULL " 
-			"PRIMARY KEY AUTOINCREMENT, Process varchar(50), " 
+			"PRIMARY KEY AUTOINCREMENT, Process TEXT(30), " 
 			" Time datetime DEFAULT CURRENT_TIMESTAMP, Type integer, "
-			" Message varchar(255), FOREIGN KEY (Type) REFERENCES MessageType(ID)) ;", 0, NULL);
+			" Message TEXT(255), FOREIGN KEY (Type) REFERENCES MessageType(ID)) ;", 0, NULL);
 	return 0;
 }
 
@@ -91,17 +93,17 @@ int read_log(char *name){
 	}
 	if(name != NULL){
 		
-		rc = sqlite3_bind_text(res, 1, name, 30, NULL);
-		printf("%d\n", rc);
-		printf("%s\n", sqlite3_expanded_sql(res));
+		rc = sqlite3_bind_text(res, 1, name, strlen(name), NULL);
 	}
 	rc = sqlite3_step(res);
 	while(rc == SQLITE_ROW){
-		fprintf(stdout, "%4s %10s %20s %6s %30s\n", sqlite3_column_text(res, 0), 
+		fprintf(stdout, "%4s %10s %20s %-8s %s\n", sqlite3_column_text(res, 0), 
 				sqlite3_column_text(res, 1), sqlite3_column_text(res, 2), 
 				sqlite3_column_text(res, 3), sqlite3_column_text(res, 4));
 		rc = sqlite3_step(res);
 	}
+	sqlite3_clear_bindings(res);
+	sqlite3_reset(res);
 	return 0;
 }
 
