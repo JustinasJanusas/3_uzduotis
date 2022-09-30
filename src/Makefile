@@ -1,15 +1,15 @@
 CC:=gcc
-LIBFOLDER:=/home/studentas/Desktop/3_uzduotis/lib
+LIBFOLDER:=../lib
 CFLAGS:=-Wall -I$(LIBFOLDER)
 LDFLAGS:=-shared -fPIC
 LDLIBS:=-llogger
 LDFLAGS:=-L$(LIBFOLDER)
-SRC:=$(BIN:.c)
+BIN:=reader writer1 writer2
 EXTRA:=-Wl,-rpath=$(LIBFOLDER)
 
 .PHONY = all clean
 
-all: reader writer1 writer2
+all: $(BIN)
 
 reader:reader.c
 	$(CC)  -o $@ $^ $(CFLAGS) $(LDLIBS) $(EXTRA)

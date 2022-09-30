@@ -1,6 +1,6 @@
 #include "logger.h"
 
-#define log_file_path "/var/log/mylogs.db"
+#define LOG_FILE_PATH "/var/log/mylogs.db"
 
 static sqlite3 *db_con = NULL;
 
@@ -52,7 +52,7 @@ static int db_setup()
 int init_log() 
 {
 	int rc = 0;
-	rc = sqlite3_open(log_file_path, &db_con);
+	rc = sqlite3_open(LOG_FILE_PATH, &db_con);
 	if(rc){
 		fprintf(stderr, "Can't open the database: %s\n", sqlite3_errmsg(db_con));
 		sqlite3_close(db_con);
